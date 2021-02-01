@@ -2,22 +2,22 @@
 #include <string>
 #include <string.h>
 extern "C" {
-#include "nim_jni_callback.h"
+#include "custom_nimview.h"
 }
 
 
 extern "C" JNIEXPORT jstring JNICALL
-Java_com_example_androidjni_NativeCpp_call(
+Java_com_example_androidjni_NativeCpp_callNim(
         JNIEnv* env,
-        jobject /* this */, jstring command) {
+        jobject /* this */, jstring request, jstring value) {
     jboolean iscopy;
     // std::string hello = "Hello from C++: " + std::string((*env).GetStringUTFChars(command, &iscopy));
-    std::string test = "null";
     NimMain();
-    const char* ret = nimHelloWorld("success2");
-    if (ret) {
-        test = std::string(ret);
-    }
-    std::string hello = "Hello from nim: " + test;
-    return env->NewStringUTF(hello.c_str());
+    // const char* ret = nimHelloWorld("success 4");
+    char* cRequest = const_cast<char*>(env->GetStringUTFChars(request, nullptr));
+    char* cValue = const_cast<char*>(env->GetStringUTFChars(value, nullptr));
+    std::string result(nimview_dispatchRequest(cRequest, cValue));
+    env->ReleaseStringUTFChars(request, cRequest);
+    env->ReleaseStringUTFChars(value, cValue);
+    return env->NewStringUTF(result.c_str());
 }
