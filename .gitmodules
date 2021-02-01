@@ -1,0 +1,3 @@
+[submodule "src/nimview"]
+	path = src/nimview
+	url = https://github.com/marcomq/nimview.git
