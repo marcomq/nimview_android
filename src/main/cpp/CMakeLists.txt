@@ -3,8 +3,10 @@
 
 # Sets the minimum version of CMake required to build the native library.
 
-cmake_minimum_required(VERSION 3.4.1)
-include_directories(C:/nim-1.2.6/lib ${ANDROID_ABI} )
+cmake_minimum_required(VERSION 3.5)
+
+include_directories(. ${ANDROID_ABI})
+# include_directories(C:/nim-1.2.6/lib ${ANDROID_ABI} )
 
 # Creates and names a library, sets it as either STATIC
 # or SHARED, and provides the relative paths to its source code.
@@ -13,10 +15,8 @@ include_directories(C:/nim-1.2.6/lib ${ANDROID_ABI} )
 AUX_SOURCE_DIRECTORY(${ANDROID_ABI} ALL_NIM_C_FILES)
 add_library( # Sets the name of the library.
         native-lib
-
         # Sets the library as a shared library.
         SHARED
-
         # Provides a relative path to your source file(s).
         native-lib.cpp ${ALL_NIM_C_FILES})
 
@@ -26,9 +26,16 @@ add_library( # Sets the name of the library.
 # you want to add. CMake verifies that the library exists before
 # completing its build.
 
+
+add_custom_target ( run ALL
+        # OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/${ANDROID_ABI}/custom_nimview.h
+        COMMAND nimble nimToC
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../nim/)
+
+add_dependencies(native-lib run)
+
 find_library( # Sets the name of the path variable.
               log-lib
-
               # Specifies the name of the NDK library that
               # you want CMake to locate.
               log )
