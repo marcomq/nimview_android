@@ -1,1 +1,8 @@
 /build
+.cxx*
+.cxx
+*cpp/x86*
+*cpp/x86_64*
+*cpp/armabi-v7a*
+*cpp/arm64-v8a*
+*node_modules*
