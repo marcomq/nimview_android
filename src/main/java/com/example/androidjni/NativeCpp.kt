@@ -4,7 +4,6 @@ import org.json.JSONObject
 
 public class NativeCpp {
 private var mAppView: WebView? = null
-
     fun init(appView: WebView?) {
         this.mAppView = appView
     }
@@ -20,7 +19,7 @@ private var mAppView: WebView? = null
     fun call(command: String): String {
         try {
             val jsonMessage = JSONObject(command)
-            val responseId = jsonMessage.getInt("responseId")
+            // val responseId = jsonMessage.getInt("responseId")
             val request = jsonMessage.getString("request")
             var value = jsonMessage.getString("value")
             if (value == "") {
@@ -31,7 +30,7 @@ private var mAppView: WebView? = null
             // this.mAppView?.evaluateJavascript(evalJsCode, null)
             return result // .replace("\\", "\\\\").replace("\'", "\\'")
         }
-        catch(e: Exception) {
+        catch (e: Exception) {
             // do nothing
         }
         return ""

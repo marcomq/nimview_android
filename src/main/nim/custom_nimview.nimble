@@ -19,6 +19,16 @@ let libraryFile =  mainApp
 
 import oswalkdir, os, strutils  
   
+let nimbleDir = parentDir(parentDir(system.findExe("nimble")))
+var nimbaseDir = parentDir(nimbleDir) & "/lib"
+if (not system.fileExists(nimbaseDir & "/nimbase.h")):
+  nimbaseDir = parentDir(parentDir(system.findExe("makelink"))) & "/lib"
+if (not system.fileExists(nimbaseDir & "/nimbase.h")):
+  nimbaseDir = parentDir(parentDir(parentDir(parentDir(system.findExe("gcc"))))) & "/lib"
+if (not system.fileExists(nimbaseDir & "/nimbase.h")):
+  nimbaseDir = parentDir(nimbleDir) & "/.choosenim/toolchains/nim-" & system.NimVersion & "/lib"
+cpFile(nimbaseDir / "nimbase.h", thisDir() / "../cpp" / "nimbase.h")
+  
 proc execCmd(command: string) = 
   when defined(windows): 
     exec "cmd /c \"" & command & "\""
@@ -28,7 +38,7 @@ proc execCmd(command: string) =
 proc buildC() = 
   ## creates python and C/C++ libraries
   
-  let stdOptions = "--header:" & application & ".h --app:lib -d:just_core -d:noSignalHandler -d:danger -d:release -d:androidNDK --os:android -d:noMain --noMain:on --threads:on "
+  let stdOptions = "--header:" & application & ".h --app:staticlib -d:just_core -d:noSignalHandler -d:danger -d:release -d:androidNDK -d:noMain --os:android --threads:on "
  
   rmDir("./../cpp/arm64-v8a")
   selfExec " cpp -c " & stdOptions & "--cpu:arm64 --nimcache:./../cpp/arm64-v8a " & mainApp
@@ -43,8 +53,8 @@ proc buildC() =
   execCmd("npm install")
   cd oldDir
   execCmd("npm run build --prefix " & uiDir)
-  # cpFile("../../nimview/backend-helper.js", uiDir & "/dist/backend-helper.js")
-  cpFile("../../nimview/backend-helper.js", uiDir & "/public/backend-helper.js")
+  # cpFile("../../nimview/src/backend-helper.js", uiDir & "/dist/backend-helper.js")
+  cpFile("../../nimview/src/backend-helper.js", uiDir & "/public/backend-helper.js")
   cpDir(uiDir & "/public", "../assets")
 
 task nimToC, "Build Libs":

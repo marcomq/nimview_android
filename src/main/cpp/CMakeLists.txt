@@ -8,6 +8,11 @@ cmake_minimum_required(VERSION 3.5)
 include_directories(. ${ANDROID_ABI})
 # include_directories(C:/nim-1.2.6/lib ${ANDROID_ABI} )
 
+add_custom_target ( run ALL
+        # OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/${ANDROID_ABI}/custom_nimview.h
+        COMMAND nimble nimToC
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../nim/)
+
 # Creates and names a library, sets it as either STATIC
 # or SHARED, and provides the relative paths to its source code.
 # You can define multiple libraries, and CMake builds them for you.
@@ -27,10 +32,6 @@ add_library( # Sets the name of the library.
 # completing its build.
 
 
-add_custom_target ( run ALL
-        # OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/${ANDROID_ABI}/custom_nimview.h
-        COMMAND nimble nimToC
-        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../nim/)
 
 add_dependencies(native-lib run)
 

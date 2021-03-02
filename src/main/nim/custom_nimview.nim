@@ -1,4 +1,4 @@
-import ../../nimview/nimview_c
+import ../../nimview/src/nimview_c
 # type StdString* {.importcpp: "std::string", header: "string".} = object
     
 addRequest("appendSomething", proc (value: string): string =  # nimview.addRequest
