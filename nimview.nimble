@@ -1,17 +1,19 @@
 # This specific file is based on https://github.com/yglukhov/nimpy/blob/master/nimpy.nimble
 
-version     = "0.1.0"
+import os, strutils
+version     = system.readFile("VERSION")
 author      = "Marco Mengelkoch"
 description = "Nim / Python / C library to run webview with HTML/JS as UI"
 license     = "MIT"
 let application = "nimview"
 bin         = @[application]
+srcDir      = "src"
 
 # Dependencies
 # you may skip jester, nimpy and webview when compiling with nim c -d:just_core
 # Currently, Webview requires gcc and doesn't work with vcc or clang
 
-when system.NimMinor >= 2:
+when system.NimMinor > 2:
   requires "nim >= 0.17.0", "jester >= 0.5.0", "nimpy >= 0.1.1", "webview == 0.1.0"
 else:
   echo "####-----------------------------------------------------####"
@@ -23,14 +25,12 @@ else:
   echo "####-----------------------------------------------------####"
   requires "nim >= 0.17.0", "jester >= 0.5.0", "nimpy >= 0.1.1", "webview >= 0.1.0"
 
-import os, strutils
-
 let vueDir = "examples/vue"
 let svelteDir = "examples/svelte"
-let mainApp = application & ".nim"
-let libraryFile =  application & "_c.nim"
-let buildDir = "build"
-mkdir "build"
+let mainApp = srcDir / application & ".nim"
+let libraryFile =  srcDir / application & "_c.nim"
+let buildDir = "out"
+mkdir buildDir
 
 let nimbleDir = parentDir(parentDir(system.findExe("nimble")))
 var nimbaseDir = parentDir(nimbleDir) & "/lib"
@@ -62,14 +62,14 @@ when defined(nimdistros):
     foreignDep "libwebkit2gtk-4.0-dev"
   elif detectOs(CentOS) or detectOs(RedHat) or detectOs(Fedora):
     foreignDep "webkit2gtk3-devel"
-  echo "You need to install following dependencies:"
+  echo "In case of trouble, you may need to install following dependencies:"
   echo ""
   echoForeignDeps()
   echo ""
 else:
   echo "no nimdistros"
 
-var extraParameter = "" # TODO: remove; syntax is nimble <compiler parameter> <task>
+var extraParameter = "" # TODO: alternatively forward task parameters...
 if (system.paramCount() > 8):
   for i in 9..system.paramCount():
     extraParameter = extraParameter & " " & system.paramStr(i) 
@@ -86,24 +86,23 @@ proc execNim(command: string) =
   echo "running: nim " & commandWithExtra
   selfExec(commandWithExtra)
 
-proc buildAllPythonLibs () = 
-  rmDir(buildDir / "tmp_py_windows")
-  rmDir(buildDir / "tmp_py_linux")
-  rmDir(buildDir / "tmp_py_macos")
-
-proc buildLibs() = 
-  ## creates python and C/C++ libraries
+proc buildPyLib() = 
+  ## C/C++ libraries
   rmDir(buildDir / "tmp_py")
-  rmDir(buildDir / "tmp_dll")
   let pyDllExtension = when defined(windows): "pyd" else: "so"
-  let cDllExtension = when defined(windows): "dll" else: "c.so"
-
   execNim "c -d:release -d:useStdLib -d:noMain --nimcache=./" & buildDir & "/tmp_py --out:" & buildDir & "/"  & 
     application & "." & pyDllExtension & " --app:lib " & " "  & mainApp & " " # creates python lib, header file not usable
+
+proc buildLibs() = 
+  ## creates python 
+  buildPyLib()
+  rmDir(buildDir / "tmp_dll")
+  let cDllExtension = when defined(windows): "dll" else: "c.so"
+
   execNim "c --passC:-fpic -d:release -d:useStdLib --noMain:on -d:noMain --nimcache=./" & buildDir & "/tmp_dll" & 
     " --app:lib --noLinking:on --header:" &  application & ".h --compileOnly:off " & " " & libraryFile # creates header and compiled .o files
 
-  cpFile(thisDir() / buildDir / "tmp_dll" / application & ".h", thisDir() / application & ".h")
+  cpFile(thisDir() / buildDir / "tmp_dll" / application & ".h", thisDir() / srcDir / application & ".h")
   let minGwSymbols = when defined(windows): 
     " -Wl,--out-implib," & buildDir & "/lib" & application & 
     ".a -Wl,--export-all-symbols -Wl,--enable-auto-import -Wl,--whole-archive " & buildDir & "/tmp_dll/*.o -Wl,--no-whole-archive " 
@@ -111,7 +110,7 @@ proc buildLibs() =
     " -Wl,--out-implib," & buildDir & "/lib" & application & ".a -Wl,--whole-archive " & buildDir & "/tmp_dll/*.o -Wl,--no-whole-archive "
   else: 
     " " & buildDir & "/tmp_dll/*.o "
-  execCmd "gcc -shared -o " & buildDir / application & "." & cDllExtension & " " & minGwSymbols & webviewlLibs # generate .dll and .a
+  execCmd "gcc -shared -o " & buildDir / application & "." & cDllExtension & " -I" & buildDir & "/tmp_dll/" & " " & minGwSymbols & webviewlLibs # generate .dll and .a
   echo "Python and shared C libraries build completed. Files have been created in build folder."
 
 proc buildRelease() =
@@ -138,9 +137,9 @@ proc buildCTest() =
 proc buildGenericObjects() = 
   rmDir(buildDir / "tmp_c")
   rmDir(buildDir / "tmp_o")
-  mkdir "build/tmp_o"
+  mkdir(buildDir / "tmp_o")
   execNim "c -d:release -d:useStdLib --noMain:on -d:noMain --noLinking --header:nimview.h --nimcache=./" & buildDir & 
-    "/tmp_c --app:staticLib --out:" & application & " " & " " & libraryFile # create g
+    "/tmp_c --app:staticLib --out:" & application & " " & " " & libraryFile 
 
 proc runTests() =
   buildLibs()
@@ -153,10 +152,13 @@ proc runTests() =
   execCmd "python tests/pyTest.py"
 
 proc generateDocs() = 
-  execNim "doc -d:useStdLib -o:docs/nimview.html nimview.nim"
+  execNim "doc -d:useStdLib -o:docs/nimview.html " & application & ".nim"
 
 task libs, "Build Libs":
   buildLibs()
+
+task pyLib, "Build python lib":
+  buildPyLib()
 
 task dev, "Serve NPM":
   execCmd("npm run dev --prefix " & svelteDir)
@@ -167,11 +169,11 @@ task debug, "Build nimview debug":
 
 task svelte, "build svelte example in release mode":
   execCmd "npm run build --prefix " & svelteDir
-  execNim "c -r --app:gui -d:release -d:useStdLib --out:build/svelte.exe examples/svelte.nim"
+  execNim "c -r --app:gui -d:release -d:useStdLib --out:svelte.exe examples/svelte.nim"
 
 task vue, "build vue example in release mode":
   execCmd "npm run build --prefix " & vueDir
-  execNim "c -r --app:gui -d:release -d:useStdLib --out:build/vue.exe examples/svelte.nim"
+  execNim "c -r --app:gui -d:release -d:useStdLib --out:vue.exe examples/svelte.nim"
     
 task release, "Build npm and Run with webview":
   buildRelease()
