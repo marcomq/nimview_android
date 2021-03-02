@@ -11,7 +11,7 @@ license     = "MIT"
 # Currently, Webview requires gcc and doesn't work with vcc or clang
 
 requires "nim >= 0.17.0", "jester >= 0.5.0", "nimpy >= 0.1.1", "webview == 0.1.0"
-let vueDir = "../vue"
+let uiDir = "../../nimview/examples/svelte"
 let application = "custom_nimview"
 bin = @[application]
 let mainApp = application & ".nim"
@@ -39,15 +39,16 @@ proc buildC() =
   rmDir("./../cpp/x86_64")
   selfExec " cpp -c " & stdOptions & " --cpu:amd64 --nimcache:./../cpp/x86_64 " & mainApp
   let oldDir = thisDir() 
-  cd vueDir
+  cd uiDir
   execCmd("npm install")
   cd oldDir
-  execCmd("npm run build --prefix " & vueDir)
-  cpFile("../../nimview/backend-helper.js", vueDir & "/dist/backend-helper.js")
-  cpDir(vueDir & "/dist", "../assets")
+  execCmd("npm run build --prefix " & uiDir)
+  # cpFile("../../nimview/backend-helper.js", uiDir & "/dist/backend-helper.js")
+  cpFile("../../nimview/backend-helper.js", uiDir & "/public/backend-helper.js")
+  cpDir(uiDir & "/public", "../assets")
 
 task nimToC, "Build Libs":
   buildC()
 
 task serve, "Serve NPM":
-  execCmd("npm run serve --prefix " & vueDir)
+  execCmd("npm run serve --prefix " & uiDir)

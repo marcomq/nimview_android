@@ -5,7 +5,7 @@
 
 cmake_minimum_required(VERSION 3.5)
 
-include_directories(. ${ANDROID_ABI}b)
+include_directories(. ${ANDROID_ABI})
 # include_directories(C:/nim-1.2.6/lib ${ANDROID_ABI} )
 
 # Creates and names a library, sets it as either STATIC
