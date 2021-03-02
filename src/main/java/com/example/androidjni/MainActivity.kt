@@ -1,12 +1,11 @@
 package com.example.androidjni
 
-import android.net.Uri
 import android.os.Bundle
 import android.view.Window
 import android.webkit.JsResult
 import android.webkit.WebChromeClient
 import android.webkit.WebView
-import android.webkit.WebViewClient
+import androidx.annotation.NonNull
 import androidx.appcompat.app.AppCompatActivity
 
 
@@ -46,10 +45,9 @@ class MainActivity : AppCompatActivity() {
             }
         }
         nativeCpp.init(webView)
-        webView.loadUrl("file:///android_asset/index.html")
+        webView.loadUrl("file:///android_asset/index.html");
 
     }
-
 
     companion object {
         // Used to load the 'native-lib' library on application startup.
