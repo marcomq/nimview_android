@@ -10,6 +10,6 @@ then check the changes on Android later.
 
 The nimview directory is a git subtree of https://github.com/marcomq/nimview. The steps performed were:
 ```
- git subtree add --prefix src/nimview https://github.com/marcomq/nimview.git main --squash
- git subtree pull --prefix src/nimview --squash  https://github.com/marcomq/nimview.git main
+ git subtree add --prefix app/src/nimview https://github.com/marcomq/nimview.git main --squash
+ git subtree pull --prefix app/src/nimview --squash  https://github.com/marcomq/nimview.git main
 ```
