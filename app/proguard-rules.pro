@@ -17,7 +17,7 @@
    *;
 }
 
--keepclassmembers class com.example.androidjni.NativeCpp {
+-keepclassmembers class com.nimviewAndroid.NativeCpp {
    public *;
 }
 

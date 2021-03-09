@@ -1,4 +1,4 @@
-package com.example.androidjni
+package com.nimviewAndroid
 import android.webkit.WebView
 import org.json.JSONObject
 

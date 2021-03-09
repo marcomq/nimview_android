@@ -6,9 +6,9 @@
 
 thread_local bool nimInitialized = false;
 
-#define THIS_PROJECT_PREFIX Java_com_example_androidjni
+#define THIS_PROJECT_PREFIX Java_com_nimviewAndroid
 extern "C" JNIEXPORT jstring JNICALL
-Java_com_example_androidjni_NativeCpp_callNim(
+Java_com_nimviewAndroid_NativeCpp_callNim(
         JNIEnv* env,
         jobject /* this */, jstring request, jstring value) {
     char* cRequest = const_cast<char*>(env->GetStringUTFChars(request, nullptr));

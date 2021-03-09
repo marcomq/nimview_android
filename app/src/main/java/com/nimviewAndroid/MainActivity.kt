@@ -1,4 +1,4 @@
-package com.example.androidjni
+package com.nimviewAndroid
 
 import android.os.Bundle
 import android.view.Window
