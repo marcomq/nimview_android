@@ -2,7 +2,8 @@ import os
 import ../src/nimview
 # start with "nimble svelte" from parent directory
 
-proc appendSomething(value: string): string {.noSideEffect.} =
+proc appendSomething(value: string): string =
+  nimview.enableRequestLogger()  # this will skip the first request, but log all further ones
   result = "'" & value & "' modified by svelte sample"
 
 proc main() =
@@ -10,7 +11,7 @@ proc main() =
   let argv = os.commandLineParams()
   for arg in argv:
     nimview.readAndParseJsonCmdFile(arg)
-  nimview.start("examples/svelte/public/index.html")
+  nimview.start("ui/index.html")
   
 when isMainModule:
   main()

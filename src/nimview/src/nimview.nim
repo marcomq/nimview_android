@@ -41,6 +41,7 @@ proc enableRequestLogger*() {.exportpy.} =
   ## Start to log all requests with content, even passwords, into file "requests.log".
   ## The file can be used for automated tests, to archive and replay all actions.
   if nimview.requestLogger.isNil:
+    debug "creating request logger, further requests will be logged to file and flushed at application end"
     if not os.fileExists("requests.log"):
       var createFile = system.open("requests.log", system.fmWrite)
       createFile.close()
@@ -110,6 +111,7 @@ when not defined(just_core):
   when defined release:
     const backendHelperJs = system.staticRead("backend-helper.js")
   else:
+    const backendHelperJsStatic = system.staticRead("backend-helper.js")
     var backendHelperJs {.threadVar.}: string
 
   proc dispatchHttpRequest*(jsonMessage: JsonNode, headers: HttpHeaders): string =
@@ -169,9 +171,10 @@ when not defined(just_core):
             else:
               jsonMessage = parseJson(uri.decodeUrl(requestPath))
             resultId = jsonMessage["responseId"].getInt()
-            response = dispatchHttpRequest(jsonMessage, request.headers)
-            let jsonResponse = %* { ($jsonMessage["key"]).unescape(): response}
-            respond $jsonResponse
+            {.gcsafe.}:
+              response = dispatchHttpRequest(jsonMessage, request.headers)
+              let jsonResponse = %* { ($jsonMessage["key"]).unescape(): response}
+              respond $jsonResponse
 
         except ReqUnknownException:
           respond Http404, nimview.responseHttpHeader, $ %* {"error": "404",
@@ -181,40 +184,57 @@ when not defined(just_core):
               "value": "request doesn't contain valid json",
               "resultId": resultId}
 
-  proc copyBackendHelper (folder: string) =
+        
+  proc getCurrentAppDir(): string =
+      let applicationName = os.getAppFilename().extractFilename()
+      debug applicationName
+      if (applicationName.startsWith("python") or applicationName.startsWith("platform-python")):
+        result = os.getCurrentDir()
+      else:
+        result = os.getAppDir()
+
+  proc copyBackendHelper (indexHtml: string) =
+    let folder = indexHtml.parentDir()
     let targetJs = folder / "backend-helper.js"
     try:
-      when (system.hostOS == "windows"):
-        if (not os.fileExists(targetJs) or defined(debug)):
-          debug "writing to " & targetJs
-          if nimview.backendHelperJs != "":
-            system.writeFile(targetJs, nimview.backendHelperJs)
-      else:
-        if (not os.fileExists(targetJs)):
-          debug "symlinking to " & targetJs
-          os.createSymlink(system.currentSourcePath.parentDir() /
-              "backend-helper.js", targetJs)
+      if not os.fileExists(targetJs) and indexHtml.endsWith(".html"):
+        # read index html file and check if it actually requires backend helper
+        let indexHtmlContent = system.readFile(indexHtml)
+        if indexHtmlContent.contains("backend-helper.js"):
+          let sourceJs = nimview.getCurrentAppDir() / "../src/backend-helper.js"
+          if (not os.fileExists(sourceJs) or ((system.hostOS == "windows") and defined(debug))):
+            debug "writing to " & targetJs
+            if nimview.backendHelperJs != "":
+              system.writeFile(targetJs, nimview.backendHelperJs)
+          elif (os.fileExists(sourceJs)):
+              debug "symlinking to " & targetJs
+              os.createSymlink(sourceJs, targetJs)
     except:
       logging.error "backend-helper.js not copied"
 
   proc getAbsPath(indexHtmlFile: string): string =
     result = indexHtmlFile
     if (not os.isAbsolute(indexHtmlFile)):
-      debug os.getAppFilename().extractFilename()
-      if (os.getAppFilename().extractFilename().startsWith("python")):
-        result = os.getCurrentDir() / indexHtmlFile
-      else:
-        result = os.getAppDir() / indexHtmlFile
+      result = nimview.getCurrentAppDir() / indexHtmlFile
+
+  proc checkFileExists(filePath: string, message: string) =
+    if not os.fileExists(filePath):
+      raise newException(IOError, message)
 
   proc startHttpServer*(indexHtmlFile: string, port: int = 8000,
       bindAddr: string = "localhost") {.exportpy.} =
     ## Start Http server (Jester) in blocking mode. indexHtmlFile will displayed for "/".
     ## Files in parent folder or sub folders may be accessed without further check. Will run forever.
-    var absIndexHtml = nimview.getAbsPath(indexHtmlFile)
-    doAssert(os.fileExists(absIndexHtml))
-    nimview.copyBackendHelper(absIndexHtml.parentDir())
+    var indexHtmlPath = nimview.getAbsPath(indexHtmlFile)
+    nimview.checkFileExists(indexHtmlPath, "Required file index.html not found at " & indexHtmlPath & 
+      "; cannot start UI; the UI folder needs to be relative to the binary")
     when not defined release:
-      backendHelperJs = system.readFile("backend-helper.js")
+      nimview.backendHelperJs = nimview.backendHelperJsStatic
+      try:
+        nimview.backendHelperJs = system.readFile(nimview.getCurrentAppDir() / "../src/backend-helper.js")
+      except: 
+        discard
+    nimview.copyBackendHelper(indexHtmlPath)
     var origin = "http://" & bindAddr
     if (bindAddr == "0.0.0.0"):
       origin = "*"
@@ -222,7 +242,7 @@ when not defined(just_core):
     let settings = jester.newSettings(
         port = Port(port),
         bindAddr = bindAddr,
-        staticDir = absIndexHtml.parentDir())
+        staticDir = indexHtmlPath.parentDir())
     var myJester = jester.initJester(nimview.handleRequest, settings = settings)
     # debug "open default browser"
     # browsers.openDefaultBrowser("http://" & bindAddr & ":" & $port)
@@ -231,21 +251,22 @@ when not defined(just_core):
 
   proc stopDesktop*() {.exportpy.} =
     ## Will stop the Http server - may trigger application exit.
-    debug "stopping ..."
-    if not myWebView.isNil():
-      myWebView.terminate()
+    when compileWithWebview:
+      debug "stopping ..."
+      if not myWebView.isNil():
+        myWebView.terminate()
 
   proc startDesktop*(indexHtmlFile: string, title: string = "nimview",
       width: int = 640, height: int = 480, resizable: bool = true,
           debug: bool = defined release) {.exportpy.} =
     ## Will start Webview Desktop UI to display the index.hmtl file in blocking mode.
     when compileWithWebview:
-      var absIndexHtml = nimview.getAbsPath(indexHtmlFile)
-      nimview.copyBackendHelper(absIndexHtml.parentDir())
-      doAssert(os.fileExists(absIndexHtml))
-      os.setCurrentDir(absIndexHtml.parentDir()) # unfortunately required, let me know if you have a workaround
+      var indexHtmlPath = nimview.getAbsPath(indexHtmlFile)
+      nimview.checkFileExists(indexHtmlPath, "Required file index.html not found at " & indexHtmlPath & 
+        "; cannot start UI; the UI folder needs to be relative to the binary")
+      nimview.copyBackendHelper(indexHtmlPath)
       # var fullScreen = true
-      myWebView = webview.newWebView(title, "file://" / absIndexHtml, width,
+      myWebView = webview.newWebView(title, "file://" / indexHtmlPath, width,
           height, resizable = resizable, debug = debug)
       myWebView.bindProc("backend", "alert", proc (
           message: string) = webview.info(myWebView, "alert", message))
@@ -289,13 +310,13 @@ proc main() =
       let argv = os.commandLineParams()
       for arg in argv:
         nimview.readAndParseJsonCmdFile(arg)
-      # let indexHtmlFile = os.getCurrentDir() / "tests/vue/dist/index.html"
-      let indexHtmlFile = os.getCurrentDir() / "tests/svelte/public/index.html"
+      # let indexHtmlFile = "../examples/vue/dist/index.html"
+      let indexHtmlFile = "../examples/svelte/public/index.html"
       nimview.enableRequestLogger()
       # nimview.startHttpServerThread(indexHtmlFile)
       # nimview.start(indexHtmlFile)
       # nimview.startHttpServer(indexHtmlFile)
-      nimview.startDesktop(indexHtmlFile)
+      nimview.start(indexHtmlFile)
 
 when isMainModule:
   main()
