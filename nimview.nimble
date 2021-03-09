@@ -1,5 +1,3 @@
-# This specific file is based on https://github.com/yglukhov/nimpy/blob/master/nimpy.nimble
-
 import os, strutils
 version     = system.readFile("VERSION")
 author      = "Marco Mengelkoch"
@@ -61,11 +59,12 @@ when defined(nimdistros):
   if detectOs(Ubuntu):
     foreignDep "libwebkit2gtk-4.0-dev"
   elif detectOs(CentOS) or detectOs(RedHat) or detectOs(Fedora):
-    foreignDep "webkit2gtk3-devel"
-  echo "In case of trouble, you may need to install following dependencies:"
-  echo ""
-  echoForeignDeps()
-  echo ""
+    foreignDep "webkitgtk4-devel"
+  if not detectOs(Windows):
+    echo "In case of trouble, you may need to install following dependencies:"
+    echo ""
+    echoForeignDeps()
+    echo ""
 else:
   echo "no nimdistros"
 
@@ -90,8 +89,8 @@ proc buildPyLib() =
   ## C/C++ libraries
   rmDir(buildDir / "tmp_py")
   let pyDllExtension = when defined(windows): "pyd" else: "so"
-  execNim "c -d:release -d:useStdLib -d:noMain --nimcache=./" & buildDir & "/tmp_py --out:" & buildDir & "/"  & 
-    application & "." & pyDllExtension & " --app:lib " & " "  & mainApp & " " # creates python lib, header file not usable
+  execNim "c -d:release -d:useStdLib -d:noMain --nimcache=./" & buildDir & "/tmp_py --out:" & buildDir / application & 
+    "." & pyDllExtension & " --app:lib " & " "  & mainApp & " " # creates python lib, header file not usable
 
 proc buildLibs() = 
   ## creates python 
@@ -114,10 +113,10 @@ proc buildLibs() =
   echo "Python and shared C libraries build completed. Files have been created in build folder."
 
 proc buildRelease() =
-  execNim "c --app:gui -d:release -d:useStdLib --out:" & application & " " & " " & mainApp
+  execNim "c --app:gui -d:release -d:useStdLib --out:"  & buildDir / application & " " & " " & mainApp
 
 proc buildDebug() =
-  execNim "c --verbosity:2 --app:console -d:debug --debuginfo --debugger:native -d:useStdLib --out:" & application & "_debug  " & " " & mainApp
+  execNim "c --verbosity:2 --app:console -d:debug --debuginfo --debugger:native --out:"  & buildDir / application & "_debug  " & " " & mainApp
 
 proc buildCSample() = 
   execCmd "gcc -c -w -o " & buildDir & "/tmp_o/c_sample.o -fmax-errors=3 -DWEBVIEW_STATIC -DWEBVIEW_IMPLEMENTATION  -O3 -fno-strict-aliasing -fno-ident " & 
@@ -138,8 +137,8 @@ proc buildGenericObjects() =
   rmDir(buildDir / "tmp_c")
   rmDir(buildDir / "tmp_o")
   mkdir(buildDir / "tmp_o")
-  execNim "c -d:release -d:useStdLib --noMain:on -d:noMain --noLinking --header:nimview.h --nimcache=./" & buildDir & 
-    "/tmp_c --app:staticLib --out:" & application & " " & " " & libraryFile 
+  execNim "c -d:release -d:useStdLib --noMain:on -d:noMain --noLinking --header:" & application & ".h --nimcache=./" & buildDir & 
+    "/tmp_c --app:staticLib --out:"  & buildDir / application & " " & " " & libraryFile 
 
 proc runTests() =
   buildLibs()
@@ -152,7 +151,7 @@ proc runTests() =
   execCmd "python tests/pyTest.py"
 
 proc generateDocs() = 
-  execNim "doc -d:useStdLib -o:docs/nimview.html " & application & ".nim"
+  execNim "doc -d:useStdLib -o:docs/" & application & ".html " & mainApp
 
 task libs, "Build Libs":
   buildLibs()
@@ -163,13 +162,21 @@ task pyLib, "Build python lib":
 task dev, "Serve NPM":
   execCmd("npm run dev --prefix " & svelteDir)
 
-task debug, "Build nimview debug":
+task debug, "Build " & application & " debug":
   buildDebug()
   # exec "./" & application & "_debug & npm run serve --prefix " & uiDir
 
 task svelte, "build svelte example in release mode":
   execCmd "npm run build --prefix " & svelteDir
   execNim "c -r --app:gui -d:release -d:useStdLib --out:svelte.exe examples/svelte.nim"
+
+task demo, "build svelte example in release mode":
+  rmDir(buildDir / "demo")
+  mkdir(buildDir / "demo/ui")
+  execCmd "npm run build --prefix " & svelteDir
+  cpDir(svelteDir / "public", buildDir / "demo/ui")
+  execNim "c --app:console -d:useServer -d:release -d:useStdLib --out:"  & buildDir / "demo/server_demo.exe examples/demo.nim"
+  execNim "c -r --app:gui -d:release -d:useStdLib --out:"  & buildDir / "demo/desktop_demo.exe examples/demo.nim"
 
 task vue, "build vue example in release mode":
   execCmd "npm run build --prefix " & vueDir
@@ -183,5 +190,6 @@ task docs, "Generate doc":
 
 task test, "Run tests":
   runTests()
+  echo "all tests passed"
   # generateDocs()
   # execCmd "npm run build --prefix " & svelteDir
