@@ -7,15 +7,16 @@ license     = "MIT"
 
 # Dependencies
 # you may skip jester, nimpy and webview when compiling with nim c -d:just_core
+# alternatively, you still can just skip webkit by compiling with -d:useServer
 
 # Currently, Webview requires gcc and doesn't work with vcc or clang
 
 requires "nim >= 0.17.0", "jester >= 0.5.0", "nimpy >= 0.1.1", "webview == 0.1.0"
-let uiDir = "../../nimview/examples/svelte"
-let application = "custom_nimview"
+const uiDir = "../../nimview/examples/svelte"
+const application = "custom_nimview"
 bin = @[application]
-let mainApp = application & ".nim"
-let libraryFile =  mainApp
+const mainApp = application & ".nim"
+const libraryFile =  mainApp
 
 import oswalkdir, os, strutils  
   
@@ -35,30 +36,33 @@ proc execCmd(command: string) =
   else:
     exec command
 
+proc buildCForArch(cpu, path: string) =
+  rmDir(path)
+  const stdOptions = "--header:" & application & ".h --app:staticlib -d:just_core -d:noSignalHandler -d:danger -d:release -d:androidNDK -d:noMain --os:android --threads:on "
+  selfExec " cpp -c " & stdOptions & "--cpu:" & cpu & " --nimcache:" & path & " " & mainApp
+
 proc buildC() = 
   ## creates python and C/C++ libraries
-  
-  let stdOptions = "--header:" & application & ".h --app:staticlib -d:just_core -d:noSignalHandler -d:danger -d:release -d:androidNDK -d:noMain --os:android --threads:on "
- 
-  rmDir("./../cpp/arm64-v8a")
-  selfExec " cpp -c " & stdOptions & "--cpu:arm64 --nimcache:./../cpp/arm64-v8a " & mainApp
-  rmDir("./../cpp/armeabi-v7a")
-  selfExec " cpp -c " & stdOptions & " --cpu:arm --nimcache:./../cpp/armeabi-v7a " & mainApp
-  rmDir("./../cpp/x86")
-  selfExec " cpp -c " & stdOptions & " --cpu:i386 --nimcache:./../cpp/x86 " & mainApp
-  rmDir("./../cpp/x86_64")
-  selfExec " cpp -c " & stdOptions & " --cpu:amd64 --nimcache:./../cpp/x86_64 " & mainApp
-  let oldDir = thisDir() 
-  cd uiDir
-  execCmd("npm install")
-  cd oldDir
+  buildCForArch("arm64", "./../cpp/arm64-v8a")
+  buildCForArch("arm", "./../cpp/armeabi-v7a")
+  buildCForArch("i386", "./../cpp/x86")
+  buildCForArch("amd64", "./../cpp/x86_64")
+
+proc buildJs() = 
+  # let oldDir = thisDir() 
+  # cd uiDir
+  # execCmd("npm install")
+  # cd oldDir
   execCmd("npm run build --prefix " & uiDir)
   # cpFile("../../nimview/src/backend-helper.js", uiDir & "/dist/backend-helper.js")
-  cpFile("../../nimview/src/backend-helper.js", uiDir & "/public/backend-helper.js")
+  rmDir("../assets")
+  mkdir("../assets")
   cpDir(uiDir & "/public", "../assets")
+  cpFile("../../nimview/src/backend-helper.js", uiDir & "/public/backend-helper.js")
 
-task nimToC, "Build Libs":
+task buildCAndJs, "Create C files and compile svelte JS files":
   buildC()
+  buildJs()
 
 task serve, "Serve NPM":
   execCmd("npm run serve --prefix " & uiDir)

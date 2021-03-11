@@ -8,30 +8,28 @@ cmake_minimum_required(VERSION 3.5)
 include_directories(. ${ANDROID_ABI})
 # include_directories(C:/nim-1.2.6/lib ${ANDROID_ABI} )
 
-add_custom_target ( run ALL
+AUX_SOURCE_DIRECTORY(${ANDROID_ABI} ALL_NIM_C_FILES)
+AUX_SOURCE_DIRECTORY(../nim ALL_NIM_FILES)
+
+# add_custom_target (prebuilt ALL
+#         COMMAND nimble install -d -y --noSSLCheck --verbose
+#         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../nim/)
+
+add_custom_target (run ALL
         # OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/${ANDROID_ABI}/custom_nimview.h
-        COMMAND nimble nimToC
+        COMMAND nimble buildCAndJs
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../nim/)
 
 # Creates and names a library, sets it as either STATIC
 # or SHARED, and provides the relative paths to its source code.
 # You can define multiple libraries, and CMake builds them for you.
 # Gradle automatically packages shared libraries with your APK.
-AUX_SOURCE_DIRECTORY(${ANDROID_ABI} ALL_NIM_C_FILES)
 add_library( # Sets the name of the library.
         native-lib
         # Sets the library as a shared library.
         SHARED
         # Provides a relative path to your source file(s).
         native-lib.cpp ${ALL_NIM_C_FILES})
-
-# Searches for a specified prebuilt library and stores the path as a
-# variable. Because CMake includes system libraries in the search path by
-# default, you only need to specify the name of the public NDK library
-# you want to add. CMake verifies that the library exists before
-# completing its build.
-
-
 
 add_dependencies(native-lib run)
 
