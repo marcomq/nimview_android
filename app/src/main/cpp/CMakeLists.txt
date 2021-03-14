@@ -9,7 +9,6 @@ include_directories(. ${ANDROID_ABI})
 # include_directories(C:/nim-1.2.6/lib ${ANDROID_ABI} )
 
 AUX_SOURCE_DIRECTORY(${ANDROID_ABI} ALL_NIM_C_FILES)
-AUX_SOURCE_DIRECTORY(../nim ALL_NIM_FILES)
 
 # add_custom_target (prebuilt ALL
 #         COMMAND nimble install -d -y --noSSLCheck --verbose
@@ -17,8 +16,7 @@ AUX_SOURCE_DIRECTORY(../nim ALL_NIM_FILES)
 
 add_custom_target (nimToCAndJs ALL
         # OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/${ANDROID_ABI}/custom_nimview.h
-        COMMAND nake 
-        DEPENDS ${ALL_NIM_FILES}
+        COMMAND nake
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../nim/)
 
 # add_custom_command(
