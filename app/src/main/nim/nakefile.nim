@@ -41,7 +41,7 @@ proc buildJs() =
   var src: seq[string] = @[]
   for path in walkDirRec(uiDir / "src"):
     src.add(path)
-  if ((uiDir / "public/index.html").needsRefresh(src)):
+  if ((uiDir / "public/build/bundle.js").needsRefresh(src)):
     # let oldDir = thisDir()
     # cd uiDir
     # execCmd("npm install")
