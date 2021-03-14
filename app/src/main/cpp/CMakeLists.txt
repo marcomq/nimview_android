@@ -15,10 +15,17 @@ AUX_SOURCE_DIRECTORY(../nim ALL_NIM_FILES)
 #         COMMAND nimble install -d -y --noSSLCheck --verbose
 #         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../nim/)
 
-add_custom_target (run ALL
+add_custom_target (nimToCAndJs ALL
         # OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/${ANDROID_ABI}/custom_nimview.h
-        COMMAND nimble buildCAndJs
+        COMMAND nake 
+        DEPENDS ${ALL_NIM_FILES}
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../nim/)
+
+# add_custom_command(
+#         OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/${ANDROID_ABI}/custom_nimview.h
+#        DEPENDS ${ALL_NIM_FILES}
+#        COMMAND nake
+#        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../nim/)
 
 # Creates and names a library, sets it as either STATIC
 # or SHARED, and provides the relative paths to its source code.
@@ -31,7 +38,7 @@ add_library( # Sets the name of the library.
         # Provides a relative path to your source file(s).
         native-lib.cpp ${ALL_NIM_C_FILES})
 
-add_dependencies(native-lib run)
+add_dependencies(native-lib nimToCAndJs)
 
 find_library( # Sets the name of the path variable.
               log-lib
