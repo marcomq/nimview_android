@@ -14,6 +14,7 @@
 .externalNativeBuild
 .cxx*
 .cxx
+*.exe
 app/src/main/cpp/x86*
 app/src/main/cpp/x86_64*
 app/src/main/cpp/armeabi-v7a*
