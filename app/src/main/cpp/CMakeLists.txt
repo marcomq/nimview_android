@@ -5,25 +5,16 @@
 
 cmake_minimum_required(VERSION 3.5)
 
-include_directories(. ${ANDROID_ABI})
+include_directories(. ${ANDROID_ABI} ${CMAKE_CURRENT_SOURCE_DIR}/../../nimview/src/)
 # include_directories(C:/nim-1.2.6/lib ${ANDROID_ABI} )
+add_definitions(-DNIMVIEW_CUSTOM_LIB -DJUST_CORE)
 
 AUX_SOURCE_DIRECTORY(${ANDROID_ABI} ALL_NIM_C_FILES)
-
-# add_custom_target (prebuilt ALL
-#         COMMAND nimble install -d -y --noSSLCheck --verbose
-#         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../nim/)
 
 add_custom_target (nimToCAndJs ALL
         # OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/${ANDROID_ABI}/custom_nimview.h
         COMMAND nake
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../nim/)
-
-# add_custom_command(
-#         OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/${ANDROID_ABI}/custom_nimview.h
-#        DEPENDS ${ALL_NIM_FILES}
-#        COMMAND nake
-#        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../nim/)
 
 # Creates and names a library, sets it as either STATIC
 # or SHARED, and provides the relative paths to its source code.
