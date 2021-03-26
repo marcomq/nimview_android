@@ -1,11 +1,11 @@
 import nake
+import os, strutils, system
 
 const application = "custom_nimview"
 const uiDir = "../../nimview/examples/svelte"
 const mainApp = application & ".nim"
 const libraryFile =  mainApp
 
-import os, strutils, system
 
 let nimbleDir = parentDir(parentDir(os.findExe("nimble")))
 var nimbaseDir = parentDir(nimbleDir) & "/lib"
