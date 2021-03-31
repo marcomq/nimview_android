@@ -5,10 +5,10 @@ Android Studio implementation of [Nimview](https://github.com/marcomq/nimview)
 
 This project uses Android Webview as UI layer. The back-end is supposed to be written in Nim, C/C++
 or - if it doesn't need to be ported to other platforms - Kotlin or Java.
-As the compilation process is slow, it would be recommended to write a web application 
-with nimview or npm first and then check the changes on Android later.
+As Android Webview doesn't has as much debugging capabilities as Chrome or Firefox, it would be recommended to write most of the UI in a web application 
+with nimview in debug mode + npm autoreload first and then test these changes on Android later.
 
-So the recommended workflow would be:
+The recommended workflow would be:
 ```
 (installation)
 git clone https://github.com/marcomq/nimview_android.git
