@@ -53,9 +53,9 @@ There is a pre-build demo windows x64 binary available that uses a simple Svelte
 To make it work, you need to unzip everything before running the binaries. The zip contains two .exe files, 
 one desktop application and one HTTP server application that can be reached at 
 http://localhost:8000.
-- [demo_app.zip](https://github.com/marcomq/nimview/files/6155327/demo_app.zip)
+- [demo.zip](https://github.com/marcomq/nimview/files/6236907/demo.zip)
 
-sha256sum 9c5c2c66bc8f02559dff834d12a21c8226c14ae80d67db745225f2ecf2ec33f2
+sha256sum ce6ecfad7d6f7d2610af89b868a69dae8de11a67bd8871d7d97bab9a08ddae9e
 
 If you want to build this demo from source, you need to run `nake demo` on the
 Nimview source folder.
@@ -206,7 +206,7 @@ The token is queried automatically with a "getGlobalToken" request when the appl
 
 This isn't a full CSRF protection, as the token isn't bound to a session and all users that can read responses from localhost can also use this token and perform an attack.
 But together with the "SameSite" directive of Jester, this might already prevent most common CSRF attacks.
-The token check can also be disabled with `nimview.skipCheckGlobalToken = true` for debugging,
+The token check can also be disabled with `nimview.setUseGlobalToken(false)` for debugging,
 or in case that there is already a session-based CSRF mitigation used by middleware. 
 
 ### Multithreading
