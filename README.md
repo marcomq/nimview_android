@@ -1,4 +1,14 @@
-# nimview_android
+# DEPRECATED 
+
+The source code has been moved to the normal nimview repository: https://github.com/marcomq/nimview
+
+You can still get the code from this repo by performing
+`npx degit marcomq/nimview/examples/android nimview_android`
+
+--------------
+
+
+
 A Nim/Webview based helper to create Android applications with Nim/C/C++ and HTML/CSS
 
 Android Studio implementation of [Nimview](https://github.com/marcomq/nimview)
